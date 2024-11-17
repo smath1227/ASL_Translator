@@ -25,18 +25,23 @@ def get_boxes():
             flagPressedS = True
             break
         if flagPressedC:
-            dst = cv2.calcBackProject([hsv], [0, 1], hist, [0, 180, 0, 256], 1)
+            dst = cv2.calcBackProject([hsv], [0, 1], hist, [0, 180, 30, 256], 1)
+            # background_subtractor = cv2.createBackgroundSubtractorMOG2(detectShadows = True)
             dst1 = dst.copy()
             disc = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))
+            # fg_mask = background_subtractor.apply(img)
             dst = cv2.morphologyEx(dst, cv2.MORPH_OPEN, disc)
             dst = cv2.morphologyEx(dst, cv2.MORPH_CLOSE, disc)
+            # combined_mask = cv2.bitwise_and(dst, fg_mask)
             cv2.filter2D(dst, -1, disc, dst)
             blur = cv2.bilateralFilter(dst, 9, 75, 75)
-            blur = cv2.medianBlur(blur, 5)
+            # blur = cv2.medianBlur(blur, 5)
             thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
                                            cv2.THRESH_BINARY, 15, 10)
             thresh = cv2.merge((thresh,thresh,thresh))
-            # cv2.imshow("res", res)
+            thresh = cv2.bitwise_not(thresh)
+
+        # cv2.imshow("res", res)
             cv2.imshow("Thresh", thresh)
         if not flagPressedS:
             imgCrop = draw(img)

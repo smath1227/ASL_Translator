@@ -50,7 +50,7 @@ def store_images(s_id):
     pic_no = 0
     flag_start_capturing = False
     frames = 0
-    # background_subtractor = cv2.createBackgroundSubtractorMOG2(detectShadows = True)
+    background_subtractor = cv2.createBackgroundSubtractorMOG2(detectShadows = True)
 
 
     while True:
@@ -60,28 +60,33 @@ def store_images(s_id):
         imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
         # Perform backprojection using histogram
-        dst = cv2.calcBackProject([imgHSV], [0, 1], hist, [0, 180, 0, 256], 1)
+        dst = cv2.calcBackProject([imgHSV], [0, 1], hist, [0, 180, 40, 240], 1)
         # fg_mask = background_subtractor.apply(img)
 
 
-        disc = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))  # Reduced kernel size
+        disc = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+        dst = cv2.bilateralFilter(dst, 9, 75, 75)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        dst = clahe.apply(dst)
+        # dst = cv2.morphologyEx(dst, cv2.MORPH_OPEN, disc)
+        # dst = cv2.morphologyEx(dst, cv2.MORPH_CLOSE, disc)
+        # dst = cv2.filter2D(dst, -1, disc) # Do not change
+
+
+        # dst = cv2.bilateralFilter(dst, 9, 75, 75)
         # fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_OPEN, disc)  # Remove small noise
         # fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_CLOSE, disc)
-        #
+
         # combined_mask = cv2.bitwise_and(dst, fg_mask)
 
 
-        # Apply Gaussian blur (smaller kernel)
-        blur = cv2.GaussianBlur(dst, (5, 5), 0)  # Reduced kernel size to preserve more detail
+        # blur = cv2.bilateralFilter(dst, 9, 75, 75)  # Reduced kernel size to preserve more detail
 
-        # Apply adaptive thresholding
-        thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+        thresh = cv2.adaptiveThreshold(dst, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
                                        cv2.THRESH_BINARY, 11, 2)
 
-        # Convert the threshold image to three channels (if needed for consistency)
         thresh = cv2.merge((thresh, thresh, thresh))
 
-        # Invert the thresholded image (to highlight foreground)
         thresh = cv2.bitwise_not(thresh)
 
         # Convert to grayscale (single channel for contours)
@@ -116,7 +121,7 @@ def store_images(s_id):
         cv2.rectangle(img, (x,y), (x+w, y+h), (0,255,0), 2)
         cv2.putText(img, str(pic_no), (30, 400), cv2.FONT_HERSHEY_TRIPLEX, 1.5, (127, 127, 255))
         cv2.imshow("Capturing sign", img)
-        cv2.imshow("thresh", thresh)
+        # cv2.imshow("thresh", thresh)
         keypress = cv2.waitKey(1)
         if keypress == ord('c'):
             if not flag_start_capturing:
