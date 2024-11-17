@@ -32,7 +32,7 @@ def get_boxes():
             dst = cv2.morphologyEx(dst, cv2.MORPH_CLOSE, disc)
             cv2.filter2D(dst, -1, disc, dst)
             blur = cv2.bilateralFilter(dst, 9, 75, 75)
-            blur = cv2.medianBlur(blur, 15)
+            blur = cv2.medianBlur(blur, 5)
             thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
                                            cv2.THRESH_BINARY, 15, 10)
             thresh = cv2.merge((thresh,thresh,thresh))
