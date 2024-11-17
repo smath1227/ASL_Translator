@@ -25,7 +25,7 @@ def get_boxes():
             flagPressedS = True
             break
         if flagPressedC:
-            dst = cv2.calcBackProject([hsv], [0, 1], hist, [0, 180, 30, 256], 1)
+            dst = cv2.calcBackProject([hsv], [0, 1], hist, [0, 180, 30, 230], 1)
             # background_subtractor = cv2.createBackgroundSubtractorMOG2(detectShadows = True)
             dst1 = dst.copy()
             disc = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))

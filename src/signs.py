@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import pickle, os, sqlite3, random
 
-image_x, image_y = 200, 200
+image_x, image_y = 600, 480
 
 def get_hand_hist():
     with open("hist", "rb") as f:
@@ -10,7 +10,6 @@ def get_hand_hist():
     return hist
 
 def init_create_folder_database():
-    # create the folder and database if not exist
     if not os.path.exists("signs"):
         os.mkdir("signs")
     if not os.path.exists("signs_db.db"):
@@ -39,7 +38,7 @@ def store_in_db(s_id, s_name):
     conn.commit()
 
 def store_images(s_id):
-    total_pics = 1200
+    total_pics = 50
     hist = get_hand_hist()
     cam = cv2.VideoCapture(0)
     if not cam.read()[0]:
@@ -59,28 +58,13 @@ def store_images(s_id):
 
         imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-        # Perform backprojection using histogram
-        dst = cv2.calcBackProject([imgHSV], [0, 1], hist, [0, 180, 40, 240], 1)
-        # fg_mask = background_subtractor.apply(img)
+        dst = cv2.calcBackProject([imgHSV], [0, 1], hist, [0, 180, 30, 230], 1)
 
 
         disc = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
         dst = cv2.bilateralFilter(dst, 9, 75, 75)
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        clahe = cv2.createCLAHE(clipLimit = 2.0, tileGridSize = (8, 8))
         dst = clahe.apply(dst)
-        # dst = cv2.morphologyEx(dst, cv2.MORPH_OPEN, disc)
-        # dst = cv2.morphologyEx(dst, cv2.MORPH_CLOSE, disc)
-        # dst = cv2.filter2D(dst, -1, disc) # Do not change
-
-
-        # dst = cv2.bilateralFilter(dst, 9, 75, 75)
-        # fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_OPEN, disc)  # Remove small noise
-        # fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_CLOSE, disc)
-
-        # combined_mask = cv2.bitwise_and(dst, fg_mask)
-
-
-        # blur = cv2.bilateralFilter(dst, 9, 75, 75)  # Reduced kernel size to preserve more detail
 
         thresh = cv2.adaptiveThreshold(dst, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
                                        cv2.THRESH_BINARY, 11, 2)
@@ -89,14 +73,12 @@ def store_images(s_id):
 
         thresh = cv2.bitwise_not(thresh)
 
-        # Convert to grayscale (single channel for contours)
         thresh = cv2.cvtColor(thresh, cv2.COLOR_BGR2GRAY)
         thresh = thresh[y: y + h, x: x + w]
         if cv2.countNonZero(thresh) == 0:
             print("Threshold image is empty.")
             return None
 
-        # Find contours in the thresholded image
         contours, _ = cv2.findContours(thresh.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
 
@@ -110,7 +92,18 @@ def store_images(s_id):
                     save_img = cv2.copyMakeBorder(save_img, int((w1-h1)/2) , int((w1-h1)/2) , 0, 0, cv2.BORDER_CONSTANT, (0, 0, 0))
                 elif h1 > w1:
                     save_img = cv2.copyMakeBorder(save_img, 0, 0, int((h1-w1)/2) , int((h1-w1)/2) , cv2.BORDER_CONSTANT, (0, 0, 0))
-                save_img = cv2.resize(save_img, (image_x, image_y))
+
+                save_img = cv2.resize(save_img, (200, 200), interpolation = cv2.INTER_AREA)
+
+                if save_img.shape[0] != save_img.shape[1]:
+                    padding = np.zeros((200, 200, 3), dtype=np.uint8)
+
+                    y_offset = (200 - save_img.shape[0]) // 2
+                    x_offset = (200 - save_img.shape[1]) // 2
+
+                    padding[y_offset:y_offset + save_img.shape[0], x_offset:x_offset + save_img.shape[1]] = save_img
+                    save_img = padding
+
                 rand = random.randint(0, 10)
                 if rand % 2 == 0:
                     save_img = cv2.flip(save_img, 1)
